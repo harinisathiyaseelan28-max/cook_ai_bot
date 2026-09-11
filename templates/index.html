@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{ chatbot_title }}</title>
+<style>
+  :root {
+    --bg: #0f1220;
+    --panel: #171b2e;
+    --accent: #7c5cff;
+    --accent-2: #22d3ee;
+    --text: #e9e9f5;
+    --muted: #9a9ac0;
+    --bubble-user: #7c5cff;
+    --bubble-bot: #232842;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background: radial-gradient(circle at top, #1a1f3a 0%, var(--bg) 60%);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 720px;
+    height: 90vh;
+    background: var(--panel);
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .header {
+    padding: 18px 22px;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 0 8px #ffffff;
+    animation: pulse 1.6s infinite ease-in-out;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .header h1 {
+    font-size: 17px;
+    margin: 0;
+    font-weight: 600;
+    color: #10142a;
+  }
+
+  .chat-window {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .msg {
+    max-width: 78%;
+    padding: 12px 16px;
+    border-radius: 16px;
+    line-height: 1.45;
+    font-size: 14.5px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    animation: fadeIn 0.25s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: var(--bubble-user);
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg.bot {
+    align-self: flex-start;
+    background: var(--bubble-bot);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+
+  .msg.typing {
+    align-self: flex-start;
+    background: var(--bubble-bot);
+    display: flex;
+    gap: 4px;
+    padding: 14px 16px;
+  }
+
+  .typing span {
+    width: 6px;
+    height: 6px;
+    background: var(--muted);
+    border-radius: 50%;
+    display: inline-block;
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-5px); }
+  }
+
+  .input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    background: #131628;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .input-bar input {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0f1220;
+    color: var(--text);
+    font-size: 14.5px;
+    outline: none;
+  }
+
+  .input-bar input:focus {
+    border-color: var(--accent-2);
+  }
+
+  .input-bar button {
+    padding: 0 20px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #10142a;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+
+  .input-bar button:hover { transform: translateY(-1px); }
+  .input-bar button:active { transform: translateY(0); }
+
+  .chat-window::-webkit-scrollbar { width: 6px; }
+  .chat-window::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="dot"></div>
+    <h1>{{ chatbot_title }}</h1>
+  </div>
+
+  <div id="chatWindow" class="chat-window">
+    <div class="msg bot">Hi! Ask me anything about this subject and I'll help you study.</div>
+  </div>
+
+  <div class="input-bar">
+    <input type="text" id="userInput" placeholder="Type your question..." autocomplete="off" />
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+  const chatWindow = document.getElementById("chatWindow");
+  const userInput = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  function addMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.classList.add("msg", sender);
+    msg.textContent = text;
+    chatWindow.appendChild(msg);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    return msg;
+  }
+
+  function addTypingIndicator() {
+    const typing = document.createElement("div");
+    typing.classList.add("msg", "bot", "typing");
+    typing.innerHTML = "<span></span><span></span><span></span>";
+    chatWindow.appendChild(typing);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+    return typing;
+  }
+
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    userInput.value = "";
+    sendBtn.disabled = true;
+
+    const typingEl = addTypingIndicator();
+
+    try {
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      typingEl.remove();
+      addMessage(data.reply || "No response received.", "bot");
+    } catch (err) {
+      typingEl.remove();
+      addMessage("Network error. Please try again.", "bot");
+    } finally {
+      sendBtn.disabled = false;
+      userInput.focus();
+    }
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  userInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+</script>
+
+</body>
+</html>
